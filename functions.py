@@ -158,3 +158,44 @@ def plot_model(model, params, x, ax, label, modelcolor, freq_vals=np.linspace(0,
         ax.set_ylim(ylim)
     ax.legend()
     return
+
+
+
+def F_SSA(freq, K1, K2, p):
+    """
+    Calculate the flux density using Synchotron Self Absorption (SSA) model.
+
+    Parameters:
+    freq (float or numpy.ndarray): Frequency values.
+    K1 (float): Scaling factor.
+    K2 (float): Scaling factor for the optical depth.
+    p (float): Power-law index.
+
+    Returns:
+    F (numpy.ndarray): Flux density values.
+    """
+    #scale the freqs by 10
+    tau = K2 * (freq/10)**(-(p + 4) / 2)
+    F = K1 * (freq/10)**(5/2) * (1 - np.exp(-tau))
+    return F
+
+
+def calc_params(data, model, initial_guess, bounds):
+    # define variables from data
+    freq = data['freq']
+    flux = data['flux']
+    flux_err = data['flux_err']
+
+    params, covariance = curve_fit(model, freq, flux, p0=initial_guess, bounds=bounds, sigma=flux_err, absolute_sigma=True)
+
+    K1_fit, K2_fit, p_fit = params
+    K1_err, K2_err, p_err = np.sqrt(np.diag(covariance))
+
+    # Create a dictionary to store the results
+    results = {
+        'K1': (K1_fit, K1_err),
+        'K2': (K2_fit, K2_err),
+        'p': (p_fit, p_err)
+    }
+
+    return results
